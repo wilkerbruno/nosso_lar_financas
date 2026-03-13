@@ -201,18 +201,23 @@ body {
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 28px;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+/* Dashboard: força todos os 6 cards em uma única linha */
+#page-dashboard > .cards-grid {
+  grid-template-columns: repeat(6, 1fr);
 }
 
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 20px;
+  padding: 16px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   position: relative;
   overflow: hidden;
   transition: transform .2s, box-shadow .2s;
@@ -234,9 +239,11 @@ body {
 
 .card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 
+/* Ícone menor no dashboard para caber em 6 colunas */
+#page-dashboard > .cards-grid .card-icon { font-size: 24px; }
 .card-icon { font-size: 32px; }
 
-.card-info { display: flex; flex-direction: column; flex: 1; }
+.card-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 
 .card-label {
   font-size: 11px;
@@ -253,6 +260,15 @@ body {
   margin-top: 4px;
 }
 
+/* Apenas no dashboard: label e value compactos para caber em 6 colunas */
+#page-dashboard > .cards-grid .card-label {
+  font-size: 10px;
+}
+
+#page-dashboard > .cards-grid .card-value {
+  font-size: 14px;
+}
+
 .card-green .card-value { color: var(--green); }
 .card-red .card-value { color: var(--red); }
 .card-blue .card-value { color: var(--blue); }
@@ -260,10 +276,10 @@ body {
 
 .saldo-badge {
   position: absolute;
-  top: 12px; right: 12px;
-  padding: 3px 10px;
+  top: 8px; right: 8px;
+  padding: 2px 8px;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -273,10 +289,12 @@ body {
 /* ===== CHARTS ===== */
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   margin-bottom: 20px;
 }
+
+@media (max-width:768px)  { .charts-grid { grid-template-columns: 1fr; } }
 
 .chart-box {
   background: var(--bg-card);
@@ -620,7 +638,9 @@ tbody td {
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1024px) {
-  .charts-grid { grid-template-columns: 1fr 1fr; }
+  #page-dashboard > .cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
@@ -628,8 +648,8 @@ tbody td {
   .sidebar.open { transform: translateX(0); }
   .main-content { margin-left: 0; }
   .menu-toggle { display: block; }
-  .charts-grid { grid-template-columns: 1fr; }
   .cards-grid { grid-template-columns: 1fr 1fr; }
+  #page-dashboard > .cards-grid { grid-template-columns: repeat(2, 1fr); }
   .form-grid { grid-template-columns: 1fr; }
   .form-full { grid-column: 1; }
 }
@@ -723,12 +743,7 @@ tbody td {
 .viewer-pdf-link span { font-size: 48px; }
 .viewer-pdf-link a { color: var(--blue); text-decoration: none; font-weight: 600; }
 
-/* ══ CHARTS GRID 4-col ═══════════════════════════════════ */
-.charts-grid { grid-template-columns: repeat(4,1fr); }
-@media (max-width:1200px) { .charts-grid { grid-template-columns: repeat(2,1fr); } }
-@media (max-width:768px)  { .charts-grid { grid-template-columns: 1fr; } }
 .empty-row { text-align:center; padding:30px; color:var(--text-muted); }
-.valor-neutro { color:var(--text-primary); font-weight:600; }
 
 /* ══ EDIT BUTTON ═══════════════════════════════════════ */
 .btn-edit {
@@ -744,349 +759,76 @@ tbody td {
 /* ══ MODAL EDIT MODE ═══════════════════════════════════ */
 .modal-header h2 { transition: color .2s; }
 
-
-
-
-/* ══ NOVOS ESTILOS — parcelas, recorrência, projeção ══════════════════════ */
-
-/* Ícone de recorrente inline na tabela */
-.tag-recorrente {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 5px;
-  font-size: 13px;
-  cursor: help;
-  vertical-align: middle;
-}
-
-/* Badge de parcelas inline na tabela */
-.tag-parcela {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 8px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  background: rgba(59,130,246,.15);
-  color: var(--blue);
-  margin-left: 6px;
-  vertical-align: middle;
-}
-
-/* Badge de projeção na tabela de evolução */
-.badge-projecao {
-  font-size: 10px;
-  background: rgba(139,92,246,.2);
-  color: #a78bfa;
-  padding: 2px 7px;
-  border-radius: 20px;
-  margin-left: 4px;
-  font-weight: 600;
-}
-
-/* Linha de mês futuro na tabela de evolução — leve opacidade */
-tr.future-row td {
-  opacity: 0.75;
-  font-style: italic;
-}
-
-/* Info box dentro do modal de compra parcelada */
-#parcelaInfo {
-  background: rgba(59,130,246,.08);
-  border: 1px solid rgba(59,130,246,.2);
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 13px;
-  color: var(--blue);
-  line-height: 1.5;
-}
-
-/* Highlight do campo parcelas quando ativo */
-#rowParcelas input:focus {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 2px rgba(59,130,246,.15);
-}
-
-/* Highlight do campo recorrente quando ativo */
-#rowRecorrente select option[value="Sim"] {
-  color: var(--green);
-  font-weight: 600;
-}
-
-
-
-/* ══ NOVOS ESTILOS — parcelas, recorrência, projeção ══════════════════════ */
-
-/* Ícone de recorrente inline na tabela */
-.tag-recorrente {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 5px;
-  font-size: 13px;
-  cursor: help;
-  vertical-align: middle;
-}
-
-/* Badge de parcelas inline na tabela */
-.tag-parcela {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 8px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  background: rgba(59,130,246,.15);
-  color: var(--blue);
-  margin-left: 6px;
-  vertical-align: middle;
-}
-
-/* Badge de projeção na tabela de evolução */
-.badge-projecao {
-  font-size: 10px;
-  background: rgba(139,92,246,.2);
-  color: #a78bfa;
-  padding: 2px 7px;
-  border-radius: 20px;
-  margin-left: 4px;
-  font-weight: 600;
-}
-
-/* Linha de mês futuro na tabela de evolução — leve opacidade */
-tr.future-row td {
-  opacity: 0.75;
-  font-style: italic;
-}
-
-/* Info box dentro do modal de compra parcelada */
-#parcelaInfo {
-  background: rgba(59,130,246,.08);
-  border: 1px solid rgba(59,130,246,.2);
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 13px;
-  color: var(--blue);
-  line-height: 1.5;
-}
-
-/* Highlight do campo parcelas quando ativo */
-#rowParcelas input:focus {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 2px rgba(59,130,246,.15);
-}
-
-/* Highlight do campo recorrente quando ativo */
-#rowRecorrente select option[value="Sim"] {
-  color: var(--green);
-  font-weight: 600;
-}
-
-/* ══ PAGAMENTOS PAGE ════════════════════════════════════════════════════════ */
-:root { --pag: #3b82f6; }
-
-.nav-pag.active { background: linear-gradient(135deg,rgba(59,130,246,.15),rgba(59,130,246,.05)) !important; color: var(--blue) !important; border-color: rgba(59,130,246,.25) !important; }
-.nav-pag:hover  { color: var(--blue) !important; }
-
-.pag-header {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px 24px;
-  margin-bottom: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-/* Progress bar */
-.pag-progress-box {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px 24px;
-  margin-bottom: 24px;
-}
-.pag-progress-track {
-  background: var(--bg-hover);
-  border-radius: 99px;
-  height: 12px;
-  overflow: hidden;
-}
-.pag-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--green), #34d399);
-  border-radius: 99px;
-  transition: width .6s ease;
-}
-
-/* Atrasado row highlight */
-.row-atrasado td { background: rgba(239,68,68,.04) !important; }
-
-/* Tag badge for parcelas */
-.tag-parcela {
-  display: inline-flex; align-items: center; gap: 3px;
-  padding: 2px 8px; border-radius: 20px;
-  font-size: 11px; font-weight: 700;
-  background: rgba(59,130,246,.15); color: var(--blue);
-  margin-left: 4px; vertical-align: middle;
-}
-
-/* Recorrente icon */
+/* ══ TAGS DE PARCELAS / RECORRÊNCIA ═══════════════════ */
 .tag-recorrente {
   display: inline-flex; align-items: center;
   margin-left: 5px; font-size: 13px; cursor: help; vertical-align: middle;
 }
 
-
-/* ══ NOVOS ESTILOS — parcelas, recorrência, projeção ══════════════════════ */
-
-/* Ícone de recorrente inline na tabela */
-.tag-recorrente {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 5px;
-  font-size: 13px;
-  cursor: help;
-  vertical-align: middle;
-}
-
-/* Badge de parcelas inline na tabela */
-.tag-parcela {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 8px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  background: rgba(59,130,246,.15);
-  color: var(--blue);
-  margin-left: 6px;
-  vertical-align: middle;
-}
-
-/* Badge de projeção na tabela de evolução */
-.badge-projecao {
-  font-size: 10px;
-  background: rgba(139,92,246,.2);
-  color: #a78bfa;
-  padding: 2px 7px;
-  border-radius: 20px;
-  margin-left: 4px;
-  font-weight: 600;
-}
-
-/* Linha de mês futuro na tabela de evolução — leve opacidade */
-tr.future-row td {
-  opacity: 0.75;
-  font-style: italic;
-}
-
-/* Info box dentro do modal de compra parcelada */
-#parcelaInfo {
-  background: rgba(59,130,246,.08);
-  border: 1px solid rgba(59,130,246,.2);
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 13px;
-  color: var(--blue);
-  line-height: 1.5;
-}
-
-/* Highlight do campo parcelas quando ativo */
-#rowParcelas input:focus {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 2px rgba(59,130,246,.15);
-}
-
-/* Highlight do campo recorrente quando ativo */
-#rowRecorrente select option[value="Sim"] {
-  color: var(--green);
-  font-weight: 600;
-}
-
-/* ══ PAGAMENTOS PAGE ════════════════════════════════════════════════════════ */
-:root { --pag: #3b82f6; }
-
-.nav-pag.active { background: linear-gradient(135deg,rgba(59,130,246,.15),rgba(59,130,246,.05)) !important; color: var(--blue) !important; border-color: rgba(59,130,246,.25) !important; }
-.nav-pag:hover  { color: var(--blue) !important; }
-
-.pag-header {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px 24px;
-  margin-bottom: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-/* Progress bar */
-.pag-progress-box {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px 24px;
-  margin-bottom: 24px;
-}
-.pag-progress-track {
-  background: var(--bg-hover);
-  border-radius: 99px;
-  height: 12px;
-  overflow: hidden;
-}
-.pag-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--green), #34d399);
-  border-radius: 99px;
-  transition: width .6s ease;
-}
-
-/* Atrasado row highlight */
-.row-atrasado td { background: rgba(239,68,68,.04) !important; }
-
-/* Tag badge for parcelas */
 .tag-parcela {
   display: inline-flex; align-items: center; gap: 3px;
   padding: 2px 8px; border-radius: 20px;
   font-size: 11px; font-weight: 700;
   background: rgba(59,130,246,.15); color: var(--blue);
-  margin-left: 4px; vertical-align: middle;
+  margin-left: 6px; vertical-align: middle;
 }
 
-/* Parcela info cell */
-.parcela-info {
-  display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
+.badge-projecao {
+  font-size: 10px; background: rgba(139,92,246,.2); color: #a78bfa;
+  padding: 2px 7px; border-radius: 20px; margin-left: 4px; font-weight: 600;
 }
 
-/* Remaining installments badges */
-.rest-badge {
-  font-size: 11px; font-weight: 600;
-  padding: 2px 8px; border-radius: 20px;
-  display: inline-block;
-}
-.rest-pending {
-  background: rgba(249,115,22,.15);
-  color: var(--orange);
-}
-.rest-done {
-  background: rgba(16,185,129,.15);
-  color: var(--green);
-}
-.rest-last {
-  background: rgba(139,92,246,.15);
-  color: #a78bfa;
+tr.future-row td { opacity: 0.75; font-style: italic; }
+
+#parcelaInfo, #filhoParcelaInfo {
+  background: rgba(59,130,246,.08);
+  border: 1px solid rgba(59,130,246,.2);
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 13px; color: var(--blue); line-height: 1.5;
 }
 
-/* Recorrente icon */
-.tag-recorrente {
-  display: inline-flex; align-items: center;
-  margin-left: 5px; font-size: 13px; cursor: help; vertical-align: middle;
+#filhoParcelaInfo {
+  background: rgba(6,214,160,.08);
+  border-color: rgba(6,214,160,.2);
+  color: var(--filho);
 }
+
+#rowParcelas input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(59,130,246,.15);
+}
+
+#rowRecorrente select option[value="Sim"] { color: var(--green); font-weight: 600; }
+
+/* ══ PAGAMENTOS PAGE ════════════════════════════════════════════════════════ */
+.nav-pag.active { background: linear-gradient(135deg,rgba(59,130,246,.15),rgba(59,130,246,.05)) !important; color: var(--blue) !important; border-color: rgba(59,130,246,.25) !important; }
+.nav-pag:hover  { color: var(--blue) !important; }
+
+.pag-header {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px; margin-bottom: 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+}
+
+.pag-progress-box {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px; margin-bottom: 24px;
+}
+.pag-progress-track {
+  background: var(--bg-hover); border-radius: 99px; height: 12px; overflow: hidden;
+}
+.pag-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), #34d399);
+  border-radius: 99px; transition: width .6s ease;
+}
+
+.row-atrasado td { background: rgba(239,68,68,.04) !important; }
+
+.parcela-info { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+
+.rest-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; display: inline-block; }
+.rest-pending { background: rgba(249,115,22,.15); color: var(--orange); }
+.rest-done    { background: rgba(16,185,129,.15); color: var(--green); }
+.rest-last    { background: rgba(139,92,246,.15); color: #a78bfa; }

@@ -970,13 +970,13 @@ def get_pagamentos():
 @app.route('/api/dashboard',methods=['GET'])
 def dashboard():
     try:
+        import calendar as cal_mod
         trans=load_sheet(SHEETS['transacoes']); compras=load_sheet(SHEETS['compras'])
         contas=load_sheet(SHEETS['contas']); filho=load_sheet(SHEETS['filho'])
         rec=sum(float(t.get('Valor (R$)',0) or 0) for t in trans if t.get('Tipo')=='Receita')
         des=sum(float(t.get('Valor (R$)',0) or 0) for t in trans if t.get('Tipo')=='Despesa')
         tc=sum(float(c.get('Valor Parcela (R$)') or c.get('Valor Total (R$)') or c.get('Valor (R$)') or 0) for c in compras)
         tct=sum(float(c.get('Valor (R$)',0) or 0) for c in contas)
-        # Para filho, usa Valor Parcela se existir, senão Valor (R$)
         tf=sum(float(f.get('Valor Parcela (R$)') or f.get('Valor Total (R$)') or f.get('Valor (R$)') or 0) for f in filho)
         saldo=rec-des-tc-tct-tf
         cat_d={}
@@ -989,13 +989,59 @@ def dashboard():
             cat=f.get('Categoria','Outros')
             vf=float(f.get('Valor Parcela (R$)') or f.get('Valor Total (R$)') or f.get('Valor (R$)') or 0)
             cat_f[cat]=cat_f.get(cat,0)+vf
+
+        # ── Evolução mensal: transações + compras + contas + filho ──────────
         monthly={}
+        def _madd(mes, key, val):
+            monthly.setdefault(mes,{'receitas':0,'despesas':0,'compras':0,'contas':0,'filho':0})
+            monthly[mes][key]+=val
+
+        def _safe_dia(raw):
+            if raw is None: return 10
+            try: return int(raw)
+            except:
+                try: return datetime.strptime(str(raw)[:10],'%Y-%m-%d').day
+                except: return 10
+
+        def _mes_compra(c):
+            dv=str(c.get('Data Vencimento') or '')[:10]
+            if len(dv)==10: return dv[:7]
+            base=str(c.get('Data') or c.get('Data Compra') or '')[:10]
+            if not base: return ''
+            dia=_safe_dia(c.get('Dia Vencimento'))
+            pa=int(c.get('Parcela Atual') or 1)
+            try:
+                b=datetime.strptime(base,'%Y-%m-%d')
+                t2=b+relativedelta(months=pa-1)
+                ld=cal_mod.monthrange(t2.year,t2.month)[1]
+                return t2.replace(day=min(dia,ld)).strftime('%Y-%m')
+            except: return base[:7]
+
         for t in trans:
             dt=str(t.get('Data','') or '')[:7]
             if not dt: continue
-            monthly.setdefault(dt,{'receitas':0,'despesas':0})
-            if t.get('Tipo')=='Receita': monthly[dt]['receitas']+=float(t.get('Valor (R$)',0) or 0)
-            else: monthly[dt]['despesas']+=float(t.get('Valor (R$)',0) or 0)
+            val=float(t.get('Valor (R$)',0) or 0)
+            _madd(dt,'receitas' if t.get('Tipo')=='Receita' else 'despesas',val)
+
+        for c in compras:
+            mes=_mes_compra(c)
+            if not mes: continue
+            vp=float(c.get('Valor Parcela (R$)') or c.get('Valor Total (R$)') or c.get('Valor (R$)') or 0)
+            _madd(mes,'compras',vp)
+
+        for c in contas:
+            mr=str(c.get('Mes Referencia','') or '')
+            if '/' in mr:
+                p=mr.split('/'); mes=f"{p[1]}-{p[0].zfill(2)}"
+            else: mes=datetime.now().strftime('%Y-%m')
+            _madd(mes,'contas',float(c.get('Valor (R$)',0) or 0))
+
+        for f in filho:
+            dt=str(f.get('Data Vencimento') or f.get('Data','') or '')[:7]
+            if not dt: continue
+            vf=float(f.get('Valor Parcela (R$)') or f.get('Valor Total (R$)') or f.get('Valor (R$)') or 0)
+            _madd(dt,'filho',vf)
+
         cs={'Pago':0,'Pendente':0,'Atrasado':0}
         for c in contas: s=c.get('Status','Pendente'); cs[s]=cs.get(s,0)+1
         return jsonify({'success':True,'resumo':{'receitas':rec,'despesas':des,'total_compras':tc,'total_contas':tct,'total_filho':tf,'saldo':saldo,'num_transacoes':len(trans),'num_compras':len(compras),'num_contas':len(contas),'num_filho':len(filho)},'categorias':cat_d,'categorias_compras':cat_c,'categorias_filho':cat_f,'evolucao_mensal':monthly,'contas_status':cs})

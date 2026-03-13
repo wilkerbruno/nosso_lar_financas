@@ -133,7 +133,13 @@ function buildBarEvolucao(id, monthly) {
   const keys=Object.keys(monthly).sort(); if(!keys.length) return;
   const labels=keys.map(m=>{const[y,mo]=m.split('-');return `${mo}/${y}`;});
   if(charts[id]) charts[id].destroy();
-  charts[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels,datasets:[{label:'Receitas',data:keys.map(k=>monthly[k].receitas),backgroundColor:'rgba(16,185,129,.7)',borderRadius:6},{label:'Despesas',data:keys.map(k=>monthly[k].despesas),backgroundColor:'rgba(239,68,68,.7)',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8'}},tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${fmt(ctx.raw)}`}}},scales:{x:{ticks:{color:'#94a3b8'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#94a3b8',callback:v=>'R$ '+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.04)'}}}}});
+  charts[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels,datasets:[
+    {label:'💚 Receitas',   data:keys.map(k=>monthly[k].receitas||0), backgroundColor:'rgba(16,185,129,.75)',  borderRadius:4},
+    {label:'❤️ Despesas',  data:keys.map(k=>monthly[k].despesas||0), backgroundColor:'rgba(239,68,68,.75)',   borderRadius:4},
+    {label:'🛒 Compras',   data:keys.map(k=>monthly[k].compras||0),  backgroundColor:'rgba(59,130,246,.75)',  borderRadius:4},
+    {label:'📄 Contas',    data:keys.map(k=>monthly[k].contas||0),   backgroundColor:'rgba(249,115,22,.75)',  borderRadius:4},
+    {label:'👶 Filho',     data:keys.map(k=>monthly[k].filho||0),    backgroundColor:'rgba(6,214,160,.75)',   borderRadius:4},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}},tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${fmt(ctx.raw)}`}}},scales:{x:{ticks:{color:'#94a3b8'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#94a3b8',callback:v=>'R$ '+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.04)'}}}}});
 }
 
 // ══════════════════════════════════════════════════════
@@ -435,14 +441,33 @@ async function loadContas() {
   const res=await fetch(`${API}/contas`); const d=await res.json();
   const tbody=document.getElementById('bodyContas'); tbody.innerHTML='';
   if(!d.data?.length){ tbody.innerHTML='<tr><td colspan="10" class="empty-row">Nenhuma conta cadastrada</td></tr>'; return; }
+  const today = new Date().toISOString().split('T')[0];
   d.data.forEach(c=>{
     const status=c['Status']||'Pendente'; const tr=document.createElement('tr');
     const isFixa = c['Recorrente'] !== 'Não';
+
+    // Calcula a data de vencimento completa a partir de Mes Referencia + Dia Vencimento
+    let dvDisplay = `Dia ${c['Dia Vencimento']||'—'}`;
+    let dvFull = null;
+    const mr = c['Mes Referencia']||'';
+    const dia = parseInt(c['Dia Vencimento']||0);
+    if(mr && dia) {
+      try {
+        const [m, y] = mr.split('/');
+        const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+        const d2 = Math.min(dia, lastDay);
+        dvFull = `${y}-${m.padStart(2,'0')}-${String(d2).padStart(2,'0')}`;
+        const isAtrasado = status !== 'Pago' && dvFull < today;
+        dvDisplay = `<span style="font-weight:600;color:var(--text-primary)">${String(d2).padStart(2,'0')}/${m.padStart(2,'0')}/${y}</span>`
+          + (isAtrasado ? ' <span style="font-size:10px;color:var(--red)" title="Vencida">⚠️</span>' : '');
+      } catch(e) { dvDisplay = `Dia ${dia}`; }
+    }
+
     tr.innerHTML=`
       <td style="color:var(--text-primary);font-weight:500">${c['Nome da Conta']||'—'} ${isFixa?'<span class="tag-recorrente" title="Conta Recorrente">🔁</span>':''}</td>
       <td>${c['Categoria']||'—'}</td>
       <td class="valor-neutro">${fmt(c['Valor (R$)'])}</td>
-      <td>Dia ${c['Dia Vencimento']||'—'}</td>
+      <td>${dvDisplay}</td>
       <td>${c['Responsavel']||'—'}</td>
       <td>${c['Mes Referencia']||'—'}</td>
       <td><span class="tag tag-${status.toLowerCase()}">${status}</span></td>
