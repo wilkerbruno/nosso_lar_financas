@@ -11,7 +11,6 @@
 </head>
 <body>
 
-<!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-brand">
     <div class="brand-text">
@@ -25,6 +24,7 @@
     <a href="#" class="nav-item"        data-page="compras"    onclick="navigateTo('compras')"><span class="nav-icon">🛒</span><span class="nav-label">Compras da Casa</span></a>
     <a href="#" class="nav-item"        data-page="contas"     onclick="navigateTo('contas')"><span class="nav-icon">📄</span><span class="nav-label">Contas Fixas</span></a>
     <a href="#" class="nav-item nav-filho" data-page="filho"   onclick="navigateTo('filho')"><span class="nav-icon">👶</span><span class="nav-label">Gastos do Filho</span></a>
+    <a href="#" class="nav-item nav-pag"   data-page="pagamentos" onclick="navigateTo('pagamentos')"><span class="nav-icon">💳</span><span class="nav-label">Pagamentos</span></a>
     <a href="#" class="nav-item"        data-page="evolucao"   onclick="navigateTo('evolucao')"><span class="nav-icon">📈</span><span class="nav-label">Evolução</span></a>
   </nav>
   <div class="sidebar-footer">
@@ -32,7 +32,6 @@
   </div>
 </aside>
 
-<!-- MAIN -->
 <main class="main-content">
   <header class="topbar">
     <div class="topbar-left">
@@ -44,7 +43,7 @@
     </div>
   </header>
 
-  <!-- ── DASHBOARD ── -->
+  <!-- DASHBOARD -->
   <div id="page-dashboard" class="page active">
     <div class="cards-grid">
       <div class="card card-green"><div class="card-icon">💚</div><div class="card-info"><span class="card-label">Total Receitas</span><span class="card-value" id="totalReceitas">R$ 0,00</span></div></div>
@@ -66,7 +65,7 @@
     </div>
   </div>
 
-  <!-- ── TRANSAÇÕES ── -->
+  <!-- TRANSAÇÕES -->
   <div id="page-transacoes" class="page">
     <div class="page-actions"><button class="btn-primary" onclick="openNewTransacao()">+ Nova Transação</button></div>
     <div class="table-box">
@@ -80,21 +79,21 @@
     </div>
   </div>
 
-  <!-- ── COMPRAS ── -->
+  <!-- COMPRAS -->
   <div id="page-compras" class="page">
     <div class="page-actions"><button class="btn-primary" onclick="openNewCompra()">+ Nova Compra</button></div>
     <div class="table-box">
       <div class="table-header"><h3>🛒 Compras da Casa</h3><input type="text" class="search-input" placeholder="🔍 Buscar..." oninput="filterTable('tblCompras',this.value)"></div>
       <div class="table-wrap">
         <table id="tblCompras">
-          <thead><tr><th>Data</th><th>Item</th><th>Categoria</th><th>Loja</th><th>Responsável</th><th>Valor</th><th>Status</th><th>Prioridade</th><th>Comprovante</th><th>Observação</th><th>Ações</th></tr></thead>
+          <thead><tr><th>Data Compra</th><th>Item</th><th>Categoria</th><th>Loja</th><th>Responsável</th><th>Valor Parcela</th><th>Vencimento</th><th>Status Pag.</th><th>Prioridade</th><th>Comprovante</th><th>Ações</th></tr></thead>
           <tbody id="bodyCompras"></tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- ── CONTAS ── -->
+  <!-- CONTAS -->
   <div id="page-contas" class="page">
     <div class="page-actions"><button class="btn-primary" onclick="openNewConta()">+ Nova Conta</button></div>
     <div class="table-box">
@@ -108,14 +107,11 @@
     </div>
   </div>
 
-  <!-- ── FILHO ── -->
+  <!-- FILHO -->
   <div id="page-filho" class="page">
     <div class="filho-hero">
       <div class="filho-hero-icon">👶</div>
-      <div>
-        <h2 class="filho-hero-title">Gastos do Nosso Filho</h2>
-        <p class="filho-hero-sub">Controle completo de todos os gastos com seu bebê</p>
-      </div>
+      <div><h2 class="filho-hero-title">Gastos do Nosso Filho</h2><p class="filho-hero-sub">Controle completo de todos os gastos com seu bebê</p></div>
       <button class="btn-filho" onclick="openNewFilho()">+ Novo Gasto</button>
     </div>
     <div class="cards-grid" style="margin-bottom:24px">
@@ -131,14 +127,64 @@
       <div class="table-header"><h3>📋 Todos os Gastos do Filho</h3><input type="text" class="search-input" placeholder="🔍 Buscar..." oninput="filterTable('tblFilho',this.value)"></div>
       <div class="table-wrap">
         <table id="tblFilho">
-          <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Responsável</th><th>Valor</th><th>Comprovante</th><th>Observação</th><th>Ações</th></tr></thead>
+          <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Responsável</th><th>Valor</th><th>Vencimento</th><th>Parcelas</th><th>Status</th><th>Comprovante</th><th>Observação</th><th>Ações</th></tr></thead>
           <tbody id="bodyFilho"></tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- ── EVOLUÇÃO ── -->
+  <!-- ══ PAGAMENTOS ══ -->
+  <div id="page-pagamentos" class="page">
+    <div class="pag-header">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div class="filter-group">
+          <label>📅 Mês de Referência</label>
+          <input type="month" id="pagMesFiltro" class="filter-input" onchange="loadPagamentos()">
+        </div>
+        <button class="btn-primary" onclick="loadPagamentos()">🔄 Atualizar</button>
+      </div>
+    </div>
+    <div class="cards-grid" style="margin-bottom:20px">
+      <div class="card card-blue"><div class="card-icon">💳</div><div class="card-info"><span class="card-label">Total do Mês</span><span class="card-value" id="pagTotal">R$ 0,00</span></div></div>
+      <div class="card card-green"><div class="card-icon">✅</div><div class="card-info"><span class="card-label">Já Pago</span><span class="card-value" id="pagPago" style="color:var(--green)">R$ 0,00</span></div></div>
+      <div class="card card-orange"><div class="card-icon">⏳</div><div class="card-info"><span class="card-label">Pendente</span><span class="card-value" id="pagPendente" style="color:var(--orange)">R$ 0,00</span></div></div>
+      <div class="card card-red"><div class="card-icon">⚠️</div><div class="card-info"><span class="card-label">Atrasado</span><span class="card-value" id="pagAtrasado" style="color:var(--red)">R$ 0,00</span></div></div>
+    </div>
+    <div class="pag-progress-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:600;color:var(--text-secondary)">Progresso de Pagamentos</span>
+        <span id="pagProgressPct" style="font-size:13px;font-weight:700;color:var(--green)">0%</span>
+      </div>
+      <div class="pag-progress-track">
+        <div class="pag-progress-fill" id="pagProgressBar" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="charts-grid" style="margin-bottom:20px">
+      <div class="chart-box" style="grid-column:span 2">
+        <div class="chart-header"><h3>📊 Por Categoria</h3></div>
+        <div class="chart-wrap"><canvas id="chartPagCat"></canvas></div>
+      </div>
+      <div class="chart-box" style="grid-column:span 2">
+        <div class="chart-header"><h3>🔀 Por Tipo (Parcelas / Contas Fixas / Filho)</h3></div>
+        <div class="chart-wrap"><canvas id="chartPagTipo"></canvas></div>
+      </div>
+    </div>
+    <div class="table-box">
+      <div class="table-header">
+        <h3>💳 Todos os Pagamentos do Mês</h3>
+        <input type="text" class="search-input" placeholder="🔍 Buscar..." oninput="filterTable('tblPagamentos',this.value)">
+      </div>
+      <div class="table-wrap">
+        <table id="tblPagamentos">
+          <thead><tr><th>Vencimento</th><th>Descrição</th><th>Categoria</th><th>Responsável</th><th>Valor</th><th>Parcelas</th><th>Status</th><th>Comprovante</th><th>Ações</th></tr></thead>
+          <tbody id="bodyPagamentos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- EVOLUÇÃO -->
   <div id="page-evolucao" class="page">
     <div class="evolucao-filters">
       <div class="filter-group"><label>Data Início</label><input type="date" id="filterInicio" class="filter-input"></div>
@@ -151,14 +197,8 @@
       <div class="card card-filho"><div class="card-icon">👶</div><div class="card-info"><span class="card-label">Gastos Filho (período)</span><span class="card-value" id="evFilho">R$ 0,00</span></div></div>
       <div class="card card-saldo"><div class="card-icon">⚖️</div><div class="card-info"><span class="card-label">Saldo do Período</span><span class="card-value" id="evSaldo">R$ 0,00</span></div></div>
     </div>
-    <div class="chart-box chart-wide" id="evolucaoChartBox" style="display:none">
-      <div class="chart-header"><h3>📈 Receitas vs Gastos por Mês</h3></div>
-      <div class="chart-wrap-tall"><canvas id="chartEvolucaoPeriodo"></canvas></div>
-    </div>
-    <div class="chart-box chart-wide" id="evolucaoSaldoBox" style="display:none">
-      <div class="chart-header"><h3>💰 Saldo Acumulado por Mês</h3></div>
-      <div class="chart-wrap-tall"><canvas id="chartSaldoAcumulado"></canvas></div>
-    </div>
+    <div class="chart-box chart-wide" id="evolucaoChartBox" style="display:none"><div class="chart-header"><h3>📈 Receitas vs Gastos por Mês</h3></div><div class="chart-wrap-tall"><canvas id="chartEvolucaoPeriodo"></canvas></div></div>
+    <div class="chart-box chart-wide" id="evolucaoSaldoBox" style="display:none"><div class="chart-header"><h3>💰 Saldo Acumulado por Mês</h3></div><div class="chart-wrap-tall"><canvas id="chartSaldoAcumulado"></canvas></div></div>
     <div class="table-box" id="evolucaoTableBox" style="display:none">
       <div class="table-header"><h3>📋 Detalhamento por Mês</h3></div>
       <div class="table-wrap">
@@ -171,9 +211,7 @@
   </div>
 </main>
 
-<!-- ══ MODALS ══ -->
-
-<!-- Modal Transação -->
+<!-- MODAL TRANSAÇÃO -->
 <div class="modal-overlay" id="modalTransacao">
   <div class="modal">
     <div class="modal-header"><h2 id="titleTransacao">💰 Nova Transação</h2><button class="modal-close" onclick="closeModal('modalTransacao')">✕</button></div>
@@ -182,17 +220,17 @@
         <div class="form-group"><label>Data *</label><input type="date" id="tData" required></div>
         <div class="form-group"><label>Tipo *</label>
           <select id="tTipo" required onchange="updateCategorias()">
-            <option value="">Selecione...</option>
-            <option value="Receita">💚 Receita</option>
-            <option value="Despesa">❤️ Despesa</option>
+            <option value="">Selecione...</option><option value="Receita">💚 Receita</option><option value="Despesa">❤️ Despesa</option>
           </select>
         </div>
         <div class="form-group form-full"><label>Descrição *</label><input type="text" id="tDescricao" placeholder="Ex: Salário, Mercado..." required></div>
         <div class="form-group"><label>Categoria *</label><select id="tCategoria" required><option value="">Selecione o tipo primeiro</option></select></div>
         <div class="form-group"><label>Responsável</label>
-          <select id="tResponsavel">
-            <option value="Ambos">👫 Ambos</option><option value="Eu">🙋 Eu</option><option value="Parceiro(a)">💑 Parceiro(a)</option>
-          </select>
+          <select id="tResponsavel"><option value="Ambos">👫 Ambos</option><option value="Eu">🙋 Eu</option><option value="Parceiro(a)">💑 Parceiro(a)</option></select>
+        </div>
+        <div class="form-group" id="rowRecorrente" style="display:none">
+          <label>🔁 Receita Fixa?</label>
+          <select id="tRecorrente"><option value="Não">Não (pagamento único)</option><option value="Sim">Sim (repete todo mês)</option></select>
         </div>
         <div class="form-group"><label>Valor (R$) *</label><input type="number" id="tValor" step="0.01" min="0" placeholder="0,00" required></div>
         <div class="form-group form-full"><label>Observação</label><input type="text" id="tObservacao" placeholder="Opcional..."></div>
@@ -200,11 +238,7 @@
           <label>📎 Comprovante</label>
           <div class="upload-zone" id="uploadZoneT" onclick="document.getElementById('tFile').click()" ondragover="dragOver(event)" ondrop="dropFile(event,'tFile','uploadZoneT','tFilePreview')">
             <input type="file" id="tFile" accept=".png,.jpg,.jpeg,.webp,.gif,.pdf" style="display:none" onchange="previewFile(this,'uploadZoneT','tFilePreview')">
-            <div class="upload-placeholder" id="tFilePreview">
-              <span class="upload-icon">📎</span>
-              <span class="upload-text">Clique ou arraste um arquivo aqui</span>
-              <span class="upload-hint">PNG, JPG, PDF — máx. 10MB</span>
-            </div>
+            <div class="upload-placeholder" id="tFilePreview"><span class="upload-icon">📎</span><span class="upload-text">Clique ou arraste um arquivo aqui</span><span class="upload-hint">PNG, JPG, PDF — máx. 10MB</span></div>
           </div>
         </div>
       </div>
@@ -216,17 +250,15 @@
   </div>
 </div>
 
-<!-- Modal Compra -->
+<!-- MODAL COMPRA -->
 <div class="modal-overlay" id="modalCompra">
   <div class="modal">
     <div class="modal-header"><h2 id="titleCompra">🛒 Nova Compra da Casa</h2><button class="modal-close" onclick="closeModal('modalCompra')">✕</button></div>
     <form id="formCompra" onsubmit="submitCompra(event)">
       <div class="form-grid">
-        <div class="form-group"><label>Data *</label><input type="date" id="cData" required></div>
+        <div class="form-group"><label>Data Compra *</label><input type="date" id="cData" required></div>
         <div class="form-group"><label>Prioridade</label>
-          <select id="cPrioridade">
-            <option value="Alta">🔴 Alta</option><option value="Média" selected>🟡 Média</option><option value="Baixa">🟢 Baixa</option>
-          </select>
+          <select id="cPrioridade"><option value="Alta">🔴 Alta</option><option value="Média" selected>🟡 Média</option><option value="Baixa">🟢 Baixa</option></select>
         </div>
         <div class="form-group form-full"><label>Item *</label><input type="text" id="cItem" placeholder="Ex: Sofá, Geladeira..." required></div>
         <div class="form-group"><label>Categoria *</label>
@@ -240,27 +272,34 @@
         </div>
         <div class="form-group"><label>Loja/Fornecedor</label><input type="text" id="cLoja" placeholder="Ex: Magazine Luiza..."></div>
         <div class="form-group"><label>Responsável</label>
-          <select id="cResponsavel">
-            <option value="Ambos">👫 Ambos</option><option value="Eu">🙋 Eu</option><option value="Parceiro(a)">💑 Parceiro(a)</option>
-          </select>
+          <select id="cResponsavel"><option value="Ambos">👫 Ambos</option><option value="Eu">🙋 Eu</option><option value="Parceiro(a)">💑 Parceiro(a)</option></select>
         </div>
-        <div class="form-group"><label>Valor (R$) *</label><input type="number" id="cValor" step="0.01" min="0" placeholder="0,00" required></div>
+        <div class="form-group"><label>Valor Total (R$) *</label><input type="number" id="cValor" step="0.01" min="0" placeholder="0,00" required></div>
         <div class="form-group"><label>Status</label>
-          <select id="cStatus">
+          <select id="cStatus" onchange="toggleParceladoFields()">
             <option value="Pendente">⏳ Pendente</option><option value="Comprado">✅ Comprado</option>
             <option value="Parcelado">💳 Parcelado</option><option value="Cancelado">❌ Cancelado</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label>📅 Dia do Vencimento *</label>
+          <input type="number" id="cDiaVencimento" min="1" max="31" value="10" placeholder="Ex: 10" required>
+        </div>
+        <div class="form-group" id="rowParcelas" style="display:none">
+          <label>💳 Nº de Parcelas *</label>
+          <input type="number" id="cNumParcelas" min="2" max="120" value="2" placeholder="Ex: 12" disabled>
+        </div>
+        <div class="form-group form-full" id="parcelaInfo" style="display:none">
+          <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--blue);line-height:1.5">
+            💳 O valor total será dividido em parcelas iguais. Cada parcela vencerá no dia informado, mês a mês.
+          </div>
         </div>
         <div class="form-group form-full"><label>Observação</label><input type="text" id="cObservacao" placeholder="Opcional..."></div>
         <div class="form-group form-full">
           <label>📎 Comprovante</label>
           <div class="upload-zone" id="uploadZoneC" onclick="document.getElementById('cFile').click()" ondragover="dragOver(event)" ondrop="dropFile(event,'cFile','uploadZoneC','cFilePreview')">
             <input type="file" id="cFile" accept=".png,.jpg,.jpeg,.webp,.gif,.pdf" style="display:none" onchange="previewFile(this,'uploadZoneC','cFilePreview')">
-            <div class="upload-placeholder" id="cFilePreview">
-              <span class="upload-icon">📎</span>
-              <span class="upload-text">Clique ou arraste um arquivo aqui</span>
-              <span class="upload-hint">PNG, JPG, PDF — máx. 10MB</span>
-            </div>
+            <div class="upload-placeholder" id="cFilePreview"><span class="upload-icon">📎</span><span class="upload-text">Clique ou arraste um arquivo aqui</span><span class="upload-hint">PNG, JPG, PDF — máx. 10MB</span></div>
           </div>
         </div>
       </div>
@@ -272,7 +311,7 @@
   </div>
 </div>
 
-<!-- Modal Conta Fixa -->
+<!-- MODAL CONTA FIXA -->
 <div class="modal-overlay" id="modalConta">
   <div class="modal">
     <div class="modal-header"><h2 id="titleConta">📄 Nova Conta Fixa</h2><button class="modal-close" onclick="closeModal('modalConta')">✕</button></div>
@@ -291,26 +330,22 @@
         <div class="form-group"><label>Valor (R$) *</label><input type="number" id="nValor" step="0.01" min="0" placeholder="0,00" required></div>
         <div class="form-group"><label>Dia Vencimento *</label><input type="number" id="nDia" min="1" max="31" placeholder="Ex: 10" required></div>
         <div class="form-group"><label>Responsável</label>
-          <select id="nResponsavel">
-            <option value="Ambos">👫 Ambos</option><option value="Eu">🙋 Eu</option><option value="Parceiro(a)">💑 Parceiro(a)</option>
-          </select>
+          <select id="nResponsavel"><option value="Ambos">👫 Ambos</option><option value="Eu">🙋 Eu</option><option value="Parceiro(a)">💑 Parceiro(a)</option></select>
         </div>
         <div class="form-group"><label>Mês Referência</label><input type="month" id="nMes"></div>
         <div class="form-group"><label>Status</label>
-          <select id="nStatus">
-            <option value="Pendente">⏳ Pendente</option><option value="Pago">✅ Pago</option><option value="Atrasado">❌ Atrasado</option>
-          </select>
+          <select id="nStatus"><option value="Pendente">⏳ Pendente</option><option value="Pago">✅ Pago</option><option value="Atrasado">❌ Atrasado</option></select>
+        </div>
+        <div class="form-group">
+          <label>🔁 Recorrente?</label>
+          <select id="nRecorrente"><option value="Sim">Sim (todo mês automaticamente)</option><option value="Não">Não (apenas este mês)</option></select>
         </div>
         <div class="form-group form-full"><label>Observação</label><input type="text" id="nObservacao" placeholder="Opcional..."></div>
         <div class="form-group form-full">
           <label>📎 Comprovante de Pagamento</label>
           <div class="upload-zone" id="uploadZoneN" onclick="document.getElementById('nFile').click()" ondragover="dragOver(event)" ondrop="dropFile(event,'nFile','uploadZoneN','nFilePreview')">
             <input type="file" id="nFile" accept=".png,.jpg,.jpeg,.webp,.gif,.pdf" style="display:none" onchange="previewFile(this,'uploadZoneN','nFilePreview')">
-            <div class="upload-placeholder" id="nFilePreview">
-              <span class="upload-icon">📎</span>
-              <span class="upload-text">Clique ou arraste um arquivo aqui</span>
-              <span class="upload-hint">PNG, JPG, PDF — máx. 10MB</span>
-            </div>
+            <div class="upload-placeholder" id="nFilePreview"><span class="upload-icon">📎</span><span class="upload-text">Clique ou arraste um arquivo aqui</span><span class="upload-hint">PNG, JPG, PDF — máx. 10MB</span></div>
           </div>
         </div>
       </div>
@@ -322,7 +357,7 @@
   </div>
 </div>
 
-<!-- Modal Filho -->
+<!-- MODAL FILHO -->
 <div class="modal-overlay" id="modalFilho">
   <div class="modal modal-filho">
     <div class="modal-header"><h2 id="titleFilho">👶 Novo Gasto do Filho</h2><button class="modal-close" onclick="closeModal('modalFilho')">✕</button></div>
@@ -330,38 +365,45 @@
       <div class="form-grid">
         <div class="form-group"><label>Data *</label><input type="date" id="fData" required></div>
         <div class="form-group"><label>Responsável</label>
-          <select id="fResponsavel">
-            <option value="Ambos">👫 Ambos</option><option value="Mãe">👩 Mãe</option><option value="Pai">👨 Pai</option>
-          </select>
+          <select id="fResponsavel"><option value="Ambos">👫 Ambos</option><option value="Mãe">👩 Mãe</option><option value="Pai">👨 Pai</option></select>
         </div>
         <div class="form-group form-full"><label>Descrição *</label><input type="text" id="fDescricao" placeholder="Ex: Fraldas, Consulta pediatra..." required></div>
         <div class="form-group"><label>Categoria *</label>
           <select id="fCategoria" required>
             <option value="">Selecione...</option>
-            <option>🍼 Alimentação/Fórmula</option>
-            <option>👕 Roupas/Enxoval</option>
-            <option>🏥 Saúde/Médico</option>
-            <option>💊 Medicamentos</option>
-            <option>🧸 Brinquedos</option>
-            <option>📚 Educação/Escola</option>
-            <option>🧴 Higiene/Fraldas</option>
-            <option>🛏️ Enxoval/Berço</option>
-            <option>🚗 Transporte/Passeio</option>
-            <option>🎂 Aniversário/Festa</option>
-            <option>📦 Outros</option>
+            <option>🍼 Alimentação/Fórmula</option><option>👕 Roupas/Enxoval</option><option>🏥 Saúde/Médico</option>
+            <option>💊 Medicamentos</option><option>🧸 Brinquedos</option><option>📚 Educação/Escola</option>
+            <option>🧴 Higiene/Fraldas</option><option>🛏️ Enxoval/Berço</option><option>🚗 Transporte/Passeio</option>
+            <option>🎂 Aniversário/Festa</option><option>📦 Outros</option>
           </select>
         </div>
         <div class="form-group"><label>Valor (R$) *</label><input type="number" id="fValor" step="0.01" min="0" placeholder="0,00" required></div>
+        <div class="form-group"><label>Status</label>
+          <select id="fStatus" onchange="toggleFilhoParceladoFields()">
+            <option value="Pendente">⏳ Pendente</option>
+            <option value="Pago">✅ Pago</option>
+            <option value="Parcelado">💳 Parcelado</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>📅 Dia do Vencimento</label>
+          <input type="number" id="fDiaVencimento" min="1" max="31" value="10" placeholder="Ex: 10">
+        </div>
+        <div class="form-group" id="rowFilhoParcelas" style="display:none">
+          <label>💳 Nº de Parcelas</label>
+          <input type="number" id="fNumParcelas" min="2" max="120" value="2" placeholder="Ex: 6" disabled>
+        </div>
+        <div class="form-group form-full" id="filhoParcelaInfo" style="display:none">
+          <div style="background:rgba(6,214,160,.08);border:1px solid rgba(6,214,160,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--filho);line-height:1.5">
+            👶 O valor total será dividido em parcelas iguais. Cada parcela vencerá no dia informado, mês a mês.
+          </div>
+        </div>
         <div class="form-group form-full"><label>Observação</label><input type="text" id="fObservacao" placeholder="Opcional..."></div>
         <div class="form-group form-full">
           <label>📎 Comprovante / Nota Fiscal</label>
           <div class="upload-zone upload-zone-filho" id="uploadZoneF" onclick="document.getElementById('fFile').click()" ondragover="dragOver(event)" ondrop="dropFile(event,'fFile','uploadZoneF','fFilePreview')">
             <input type="file" id="fFile" accept=".png,.jpg,.jpeg,.webp,.gif,.pdf" style="display:none" onchange="previewFile(this,'uploadZoneF','fFilePreview')">
-            <div class="upload-placeholder" id="fFilePreview">
-              <span class="upload-icon">🧾</span>
-              <span class="upload-text">Clique ou arraste a nota fiscal aqui</span>
-              <span class="upload-hint">PNG, JPG, PDF — máx. 10MB</span>
-            </div>
+            <div class="upload-placeholder" id="fFilePreview"><span class="upload-icon">🧾</span><span class="upload-text">Clique ou arraste a nota fiscal aqui</span><span class="upload-hint">PNG, JPG, PDF — máx. 10MB</span></div>
           </div>
         </div>
       </div>
@@ -373,7 +415,7 @@
   </div>
 </div>
 
-<!-- Comprovante Viewer -->
+<!-- VIEWER -->
 <div class="modal-overlay" id="modalViewer">
   <div class="modal modal-viewer">
     <div class="modal-header"><h2>📎 Comprovante</h2><button class="modal-close" onclick="closeModal('modalViewer')">✕</button></div>
@@ -382,6 +424,12 @@
 </div>
 
 <div id="toast" class="toast"></div>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('pagMesFiltro');
+    if(el) el.value = new Date().toISOString().slice(0,7);
+  });
+</script>
 <script src="/static/js/app.js"></script>
 </body>
 </html>

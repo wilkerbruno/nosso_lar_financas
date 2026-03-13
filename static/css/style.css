@@ -743,3 +743,350 @@ tbody td {
 
 /* ══ MODAL EDIT MODE ═══════════════════════════════════ */
 .modal-header h2 { transition: color .2s; }
+
+
+
+
+/* ══ NOVOS ESTILOS — parcelas, recorrência, projeção ══════════════════════ */
+
+/* Ícone de recorrente inline na tabela */
+.tag-recorrente {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  font-size: 13px;
+  cursor: help;
+  vertical-align: middle;
+}
+
+/* Badge de parcelas inline na tabela */
+.tag-parcela {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(59,130,246,.15);
+  color: var(--blue);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Badge de projeção na tabela de evolução */
+.badge-projecao {
+  font-size: 10px;
+  background: rgba(139,92,246,.2);
+  color: #a78bfa;
+  padding: 2px 7px;
+  border-radius: 20px;
+  margin-left: 4px;
+  font-weight: 600;
+}
+
+/* Linha de mês futuro na tabela de evolução — leve opacidade */
+tr.future-row td {
+  opacity: 0.75;
+  font-style: italic;
+}
+
+/* Info box dentro do modal de compra parcelada */
+#parcelaInfo {
+  background: rgba(59,130,246,.08);
+  border: 1px solid rgba(59,130,246,.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--blue);
+  line-height: 1.5;
+}
+
+/* Highlight do campo parcelas quando ativo */
+#rowParcelas input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(59,130,246,.15);
+}
+
+/* Highlight do campo recorrente quando ativo */
+#rowRecorrente select option[value="Sim"] {
+  color: var(--green);
+  font-weight: 600;
+}
+
+
+
+/* ══ NOVOS ESTILOS — parcelas, recorrência, projeção ══════════════════════ */
+
+/* Ícone de recorrente inline na tabela */
+.tag-recorrente {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  font-size: 13px;
+  cursor: help;
+  vertical-align: middle;
+}
+
+/* Badge de parcelas inline na tabela */
+.tag-parcela {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(59,130,246,.15);
+  color: var(--blue);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Badge de projeção na tabela de evolução */
+.badge-projecao {
+  font-size: 10px;
+  background: rgba(139,92,246,.2);
+  color: #a78bfa;
+  padding: 2px 7px;
+  border-radius: 20px;
+  margin-left: 4px;
+  font-weight: 600;
+}
+
+/* Linha de mês futuro na tabela de evolução — leve opacidade */
+tr.future-row td {
+  opacity: 0.75;
+  font-style: italic;
+}
+
+/* Info box dentro do modal de compra parcelada */
+#parcelaInfo {
+  background: rgba(59,130,246,.08);
+  border: 1px solid rgba(59,130,246,.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--blue);
+  line-height: 1.5;
+}
+
+/* Highlight do campo parcelas quando ativo */
+#rowParcelas input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(59,130,246,.15);
+}
+
+/* Highlight do campo recorrente quando ativo */
+#rowRecorrente select option[value="Sim"] {
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* ══ PAGAMENTOS PAGE ════════════════════════════════════════════════════════ */
+:root { --pag: #3b82f6; }
+
+.nav-pag.active { background: linear-gradient(135deg,rgba(59,130,246,.15),rgba(59,130,246,.05)) !important; color: var(--blue) !important; border-color: rgba(59,130,246,.25) !important; }
+.nav-pag:hover  { color: var(--blue) !important; }
+
+.pag-header {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Progress bar */
+.pag-progress-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+.pag-progress-track {
+  background: var(--bg-hover);
+  border-radius: 99px;
+  height: 12px;
+  overflow: hidden;
+}
+.pag-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), #34d399);
+  border-radius: 99px;
+  transition: width .6s ease;
+}
+
+/* Atrasado row highlight */
+.row-atrasado td { background: rgba(239,68,68,.04) !important; }
+
+/* Tag badge for parcelas */
+.tag-parcela {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 20px;
+  font-size: 11px; font-weight: 700;
+  background: rgba(59,130,246,.15); color: var(--blue);
+  margin-left: 4px; vertical-align: middle;
+}
+
+/* Recorrente icon */
+.tag-recorrente {
+  display: inline-flex; align-items: center;
+  margin-left: 5px; font-size: 13px; cursor: help; vertical-align: middle;
+}
+
+
+/* ══ NOVOS ESTILOS — parcelas, recorrência, projeção ══════════════════════ */
+
+/* Ícone de recorrente inline na tabela */
+.tag-recorrente {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  font-size: 13px;
+  cursor: help;
+  vertical-align: middle;
+}
+
+/* Badge de parcelas inline na tabela */
+.tag-parcela {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(59,130,246,.15);
+  color: var(--blue);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Badge de projeção na tabela de evolução */
+.badge-projecao {
+  font-size: 10px;
+  background: rgba(139,92,246,.2);
+  color: #a78bfa;
+  padding: 2px 7px;
+  border-radius: 20px;
+  margin-left: 4px;
+  font-weight: 600;
+}
+
+/* Linha de mês futuro na tabela de evolução — leve opacidade */
+tr.future-row td {
+  opacity: 0.75;
+  font-style: italic;
+}
+
+/* Info box dentro do modal de compra parcelada */
+#parcelaInfo {
+  background: rgba(59,130,246,.08);
+  border: 1px solid rgba(59,130,246,.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--blue);
+  line-height: 1.5;
+}
+
+/* Highlight do campo parcelas quando ativo */
+#rowParcelas input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(59,130,246,.15);
+}
+
+/* Highlight do campo recorrente quando ativo */
+#rowRecorrente select option[value="Sim"] {
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* ══ PAGAMENTOS PAGE ════════════════════════════════════════════════════════ */
+:root { --pag: #3b82f6; }
+
+.nav-pag.active { background: linear-gradient(135deg,rgba(59,130,246,.15),rgba(59,130,246,.05)) !important; color: var(--blue) !important; border-color: rgba(59,130,246,.25) !important; }
+.nav-pag:hover  { color: var(--blue) !important; }
+
+.pag-header {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Progress bar */
+.pag-progress-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+.pag-progress-track {
+  background: var(--bg-hover);
+  border-radius: 99px;
+  height: 12px;
+  overflow: hidden;
+}
+.pag-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), #34d399);
+  border-radius: 99px;
+  transition: width .6s ease;
+}
+
+/* Atrasado row highlight */
+.row-atrasado td { background: rgba(239,68,68,.04) !important; }
+
+/* Tag badge for parcelas */
+.tag-parcela {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 20px;
+  font-size: 11px; font-weight: 700;
+  background: rgba(59,130,246,.15); color: var(--blue);
+  margin-left: 4px; vertical-align: middle;
+}
+
+/* Parcela info cell */
+.parcela-info {
+  display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
+}
+
+/* Remaining installments badges */
+.rest-badge {
+  font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 20px;
+  display: inline-block;
+}
+.rest-pending {
+  background: rgba(249,115,22,.15);
+  color: var(--orange);
+}
+.rest-done {
+  background: rgba(16,185,129,.15);
+  color: var(--green);
+}
+.rest-last {
+  background: rgba(139,92,246,.15);
+  color: #a78bfa;
+}
+
+/* Recorrente icon */
+.tag-recorrente {
+  display: inline-flex; align-items: center;
+  margin-left: 5px; font-size: 13px; cursor: help; vertical-align: middle;
+}
