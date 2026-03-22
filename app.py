@@ -87,7 +87,7 @@ def allowed(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT
 
 def del_file(fname):
-    if fname:
+    if fname and isinstance(fname, str):
         p = os.path.join(UPLOAD_DIR, fname)
         if os.path.exists(p): os.remove(p)
 
@@ -131,9 +131,9 @@ FILHO_HEADERS = [
     'ID','Data','Descricao','Categoria','Responsavel',
     'Valor Total (R$)','Valor Parcela (R$)','Status',
     'Num Parcelas','Parcela Atual','Dia Vencimento','Data Vencimento',
-    'Status Pagamento','Comprovante','Observacao'
+    'Status Pagamento','Comprovante','Observacao','Recorrente'
 ]
-FILHO_WIDTHS = [8,12,30,25,15,16,16,12,12,12,14,15,15,30,25]
+FILHO_WIDTHS = [8,12,30,25,15,16,16,12,12,12,14,15,15,30,25,12]
 
 def init_excel():
     os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -193,14 +193,12 @@ def _migrate():
                 continue
             changed = True
 
-            # ── Detecta e corrige linha corrompida (Status tem valor numérico) ──
             st_raw = row[col_st - 1].value if col_st else None
             is_corrupt = False
             if st_raw is not None:
                 try: float(st_raw); is_corrupt = True
                 except (TypeError, ValueError): pass
             if is_corrupt:
-                # Os dados estão deslocados: Obs contém o texto de obs real, StPag contém obs errada
                 obs_real = row[col_stpag - 1].value if col_stpag else None
                 dia_raw  = row[col_dia - 1].value if col_dia else '2026-03-23'
                 try:
@@ -216,18 +214,16 @@ def _migrate():
                 if col_prio:  row[col_prio - 1].value  = 'Alta'
                 if col_obs:   row[col_obs - 1].value   = obs_real
                 if col_np:    row[col_np - 1].value    = 1
-                if col_pa:    row[col_pa - 1].value    = 1  # PA sempre 1 em linha corrompida
+                if col_pa:    row[col_pa - 1].value    = 1
                 if col_dia:   row[col_dia - 1].value   = dia_int
                 if col_stpag: row[col_stpag - 1].value = 'Pendente'
-                # Compute Data Vencimento com PA=1 (offset=0)
                 if col_dv and col_data:
                     raw = row[col_data - 1].value
                     if raw:
                         base = raw.strftime('%Y-%m-%d') if isinstance(raw,(datetime,date)) else str(raw)[:10]
                         row[col_dv - 1].value = _due_date(base, dia_int, 0)
-                continue  # linha corrigida, skip restante
+                continue
 
-            # ── Back-fill Valor Total / Parcela ──
             if col_valor and col_vt and row[col_vt - 1].value is None:
                 row[col_vt - 1].value = row[col_valor - 1].value or 0
             if col_vt and col_vp and col_np:
@@ -236,7 +232,6 @@ def _migrate():
                 if row[col_vp - 1].value is None:
                     row[col_vp - 1].value = round(vt / max(np, 1), 2)
 
-            # ── Status Pagamento ──
             st_val = str(row[col_st - 1].value or '') if col_st else ''
             if col_stpag:
                 cur_stpag = row[col_stpag - 1].value
@@ -245,7 +240,6 @@ def _migrate():
                 elif st_val in PAGO_STATUS and str(cur_stpag) not in ('Pago',):
                     row[col_stpag - 1].value = 'Pago'
 
-            # ── Data Vencimento ──
             if col_dv and row[col_dv - 1].value in (None, ''):
                 base_date = None
                 if col_data:
@@ -288,21 +282,66 @@ def _migrate():
         changed |= _add_col(ws, 'Dia Vencimento', 14, 10)
         changed |= _add_col(ws, 'Data Vencimento', 15, None)
         changed |= _add_col(ws, 'Status Pagamento', 15, 'Pendente')
+        changed |= _add_col(ws, 'Recorrente', 12, 'Não')
 
         hdrs_f = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
         def _fidx(name): return hdrs_f.index(name) + 1 if name in hdrs_f else None
 
-        col_fvr  = _fidx('Valor (R$)')
-        col_fvt  = _fidx('Valor Total (R$)')
-        col_fvp  = _fidx('Valor Parcela (R$)')
-        col_fdt  = _fidx('Data')
-        col_fdia = _fidx('Dia Vencimento')
-        col_fdv  = _fidx('Data Vencimento')
-        col_fpa  = _fidx('Parcela Atual')
+        col_fvr    = _fidx('Valor (R$)')
+        col_fvt    = _fidx('Valor Total (R$)')
+        col_fvp    = _fidx('Valor Parcela (R$)')
+        col_fdt    = _fidx('Data')
+        col_fdia   = _fidx('Dia Vencimento')
+        col_fdv    = _fidx('Data Vencimento')
+        col_fpa    = _fidx('Parcela Atual')
+        col_fst    = _fidx('Status')
+        col_fnp    = _fidx('Num Parcelas')
+        col_fstpag = _fidx('Status Pagamento')
+        col_fcomp  = _fidx('Comprovante')
+        col_fobs   = _fidx('Observacao')
 
         for row in ws.iter_rows(min_row=2):
             if not any(c.value for c in row): continue
             changed = True
+
+            # ── Detecta linha corrompida: Comprovante contém valor numérico ──
+            comp_raw = row[col_fcomp - 1].value if col_fcomp else None
+            is_corrupt_f = False
+            if comp_raw is not None:
+                try:
+                    float(comp_raw)
+                    is_corrupt_f = True
+                except (ValueError, TypeError):
+                    pass
+
+            if is_corrupt_f:
+                valor_total = float(row[col_fvr - 1].value or 0) if col_fvr else 0
+                dia_raw_st = row[col_fst - 1].value if col_fst else 10
+                try:
+                    dia_fixado = int(dia_raw_st)
+                except (ValueError, TypeError):
+                    dia_fixado = 10
+                base_raw = row[col_fdt - 1].value if col_fdt else None
+                if isinstance(base_raw, (datetime, date)):
+                    base_str = base_raw.strftime('%Y-%m-%d')
+                elif base_raw:
+                    base_str = str(base_raw)[:10]
+                else:
+                    base_str = datetime.now().strftime('%Y-%m-%d')
+                if col_fcomp:  row[col_fcomp  - 1].value = ''
+                if col_fobs:   row[col_fobs   - 1].value = ''
+                if col_fvt:    row[col_fvt    - 1].value = valor_total
+                if col_fvp:    row[col_fvp    - 1].value = valor_total
+                if col_fvr:    row[col_fvr    - 1].value = valor_total
+                if col_fst:    row[col_fst    - 1].value = 'Pendente'
+                if col_fnp:    row[col_fnp    - 1].value = 1
+                if col_fpa:    row[col_fpa    - 1].value = 1
+                if col_fdia:   row[col_fdia   - 1].value = dia_fixado
+                if col_fdv:    row[col_fdv    - 1].value = _due_date(base_str, dia_fixado, 0)
+                if col_fstpag: row[col_fstpag - 1].value = 'Pendente'
+                continue
+
+            # ── Back-fill normal para linhas íntegras ────────────────────────
             if col_fvr and col_fvt and row[col_fvt - 1].value is None:
                 row[col_fvt - 1].value = row[col_fvr - 1].value or 0
             if col_fvt and col_fvp and row[col_fvp - 1].value is None:
@@ -320,7 +359,10 @@ def _migrate():
                             if col_fdia: row[col_fdia - 1].value = dia
                         except Exception:
                             dia = 10
-                    pa  = int(row[col_fpa  - 1].value or 1)  if col_fpa  else 1
+                    try:
+                        pa = int(row[col_fpa - 1].value or 1) if col_fpa else 1
+                    except (ValueError, TypeError):
+                        pa = 1
                     row[col_fdv - 1].value = _due_date(base_date, dia, pa - 1)
 
     if changed: wb.save(EXCEL_FILE)
@@ -419,7 +461,6 @@ def add_comp():
             data_venc=_due_date(base_date,dia_venc,i)
             st_pag='Pago' if status in PAGO_STATUS else 'Pendente'
             rn=ws.max_row+1; cur_nid=nid+i
-            # Build row in actual column order
             row_vals=[None]*len(hdrs)
             def sv(col_idx,val):
                 if col_idx: row_vals[col_idx-1]=val
@@ -458,7 +499,6 @@ def edit_comp(iid):
         def gv(row, col_idx, fallback=None):
             return row[col_idx-1].value if col_idx else fallback
 
-        # ── 1. Encontra a linha alvo pelo ID ──────────────────────────────────
         target_row = None
         for row in ws.iter_rows(min_row=2):
             if row[0].value == iid:
@@ -466,12 +506,10 @@ def edit_comp(iid):
         if not target_row:
             return jsonify({'success':False,'error':'ID não encontrado'}),404
 
-        # ── 2. Captura chave do grupo (Item + Data + ValorTotal original) ──────
         orig_item = gv(target_row, ci_item) or ''
         orig_data = str(gv(target_row, ci_data) or '')[:10]
         orig_vt   = float(gv(target_row, ci_vt) or gv(target_row, ci_vr) or 0)
 
-        # ── 3. Novos valores do formulário ────────────────────────────────────
         novo_status     = b.get('status', str(gv(target_row, ci_st) or 'Pendente'))
         novo_np         = int(b.get('num_parcelas', 1)) if novo_status == 'Parcelado' else 1
         novo_valor      = float(b.get('valor', orig_vt))
@@ -486,7 +524,6 @@ def edit_comp(iid):
         novo_obs        = b.get('observacao', gv(target_row, ci_obs) or '')
         novo_comp       = b.get('comprovante', gv(target_row, ci_comp) or '')
 
-        # ── 4. Coleta todas as linhas do grupo (mesmo Item+Data+ValorTotal) ───
         group_rows = []
         for row in ws.iter_rows(min_row=2):
             if not any(c.value for c in row): continue
@@ -496,8 +533,6 @@ def edit_comp(iid):
             if r_item == orig_item and r_data == orig_data and abs(r_vt - orig_vt) < 0.01:
                 group_rows.append(row[0].row)
 
-        # ── 5. Preserva Status Pagamento de cada parcela já paga ─────────────
-        # Mapa: parcela_num → status_pagamento
         pagas_map = {}
         for rn in group_rows:
             pa_val  = ws.cell(rn, ci_pa).value if ci_pa else 1
@@ -507,17 +542,14 @@ def edit_comp(iid):
             is_pago = (str(stpag_v) == 'Pago' or str(st_v) in PAGO_STATUS)
             pagas_map[pa_int] = 'Pago' if is_pago else 'Pendente'
 
-        # ── 6. Deleta todas as linhas do grupo (de baixo pra cima) ───────────
         for rn in sorted(group_rows, reverse=True):
             ws.delete_rows(rn)
 
-        # ── 7. Recria as parcelas com os novos valores ────────────────────────
         nid = get_next_id(ws)
         st_pag_global = 'Pago' if novo_status in PAGO_STATUS else 'Pendente'
         for i in range(novo_np):
             data_venc = _due_date(novo_data, novo_dia, i)
             pa_num    = i + 1
-            # Mantém status da parcela se ela já existia, senão usa o global
             st_pag    = pagas_map.get(pa_num, st_pag_global)
             if novo_status in PAGO_STATUS: st_pag = 'Pago'
 
@@ -618,6 +650,7 @@ def add_filho():
     try:
         b=request.json; wb=openpyxl.load_workbook(EXCEL_FILE); ws=wb[SHEETS['filho']]
         hdrs=[ws.cell(1,c).value for c in range(1,ws.max_column+1)]
+        def ci(n): return hdrs.index(n)+1 if n in hdrs else None
         status=b.get('status','Pendente')
         num_parcelas=int(b.get('num_parcelas',1)) if status=='Parcelado' else 1
         dia_venc=int(b.get('dia_vencimento',10))
@@ -625,32 +658,46 @@ def add_filho():
         val_parcela=round(valor_total/num_parcelas,2)
         base_date=b.get('data',datetime.now().strftime('%Y-%m-%d'))
         nid=get_next_id(ws)
-        # Detect if sheet uses new or old column layout
-        uses_new_cols = 'Valor Total (R$)' in hdrs
+        ci_id=ci('ID'); ci_data=ci('Data'); ci_desc=ci('Descricao')
+        ci_cat=ci('Categoria'); ci_resp=ci('Responsavel')
+        ci_vr=ci('Valor (R$)'); ci_vt=ci('Valor Total (R$)'); ci_vp=ci('Valor Parcela (R$)')
+        ci_st=ci('Status'); ci_np=ci('Num Parcelas'); ci_pa=ci('Parcela Atual')
+        ci_dia=ci('Dia Vencimento'); ci_dv=ci('Data Vencimento')
+        ci_stpag=ci('Status Pagamento'); ci_comp=ci('Comprovante'); ci_obs=ci('Observacao')
+        ci_rec=ci('Recorrente')
         for i in range(num_parcelas):
             rn=ws.max_row+1
             data_venc=_due_date(base_date,dia_venc,i)
-            if uses_new_cols:
-                # New layout: ID,Data,Descricao,Categoria,Responsavel,ValorTotal,ValorParcela,Status,NumParcelas,ParcelaAtual,DiaVenc,DataVenc,StatusPag,Comprovante,Obs
-                ws.append([nid+i,base_date,b.get('descricao',''),b.get('categoria',''),b.get('responsavel',''),
-                           valor_total,val_parcela,status,num_parcelas,i+1,dia_venc,data_venc,'Pendente',
-                           b.get('comprovante','') if i==0 else '',b.get('observacao','')])
-                _style_row(ws,rn,alt=(rn%2==0))
-                ws.cell(row=rn,column=6).number_format='R$ #,##0.00'
-                ws.cell(row=rn,column=7).number_format='R$ #,##0.00'
-            else:
-                # Old/fallback layout
-                ws.append([nid+i,base_date,b.get('descricao',''),b.get('categoria',''),b.get('responsavel',''),
-                           valor_total,b.get('comprovante','') if i==0 else '',b.get('observacao','')])
-                _style_row(ws,rn,alt=(rn%2==0))
-                ws.cell(row=rn,column=6).number_format='R$ #,##0.00'
+            row_vals=[None]*len(hdrs)
+            def sv(col_idx, val):
+                if col_idx: row_vals[col_idx-1]=val
+            sv(ci_id,   nid+i)
+            sv(ci_data, base_date)
+            sv(ci_desc, b.get('descricao',''))
+            sv(ci_cat,  b.get('categoria',''))
+            sv(ci_resp, b.get('responsavel',''))
+            sv(ci_vt,   valor_total)
+            sv(ci_vp,   val_parcela)
+            sv(ci_vr,   valor_total)
+            sv(ci_st,   status)
+            sv(ci_np,   num_parcelas)
+            sv(ci_pa,   i+1)
+            sv(ci_dia,  dia_venc)
+            sv(ci_dv,   data_venc)
+            sv(ci_stpag,'Pendente')
+            sv(ci_comp, b.get('comprovante','') if i==0 else '')
+            sv(ci_obs,  b.get('observacao',''))
+            sv(ci_rec,  'Não' if status == 'Parcelado' else b.get('recorrente','Não'))
+            ws.append(row_vals)
+            _style_row(ws,rn,alt=(rn%2==0))
+            for col in [ci_vt, ci_vp, ci_vr]:
+                if col: ws.cell(row=rn,column=col).number_format='R$ #,##0.00'
         wb.save(EXCEL_FILE); _update_resumo()
         return jsonify({'success':True,'id':nid,'parcelas_criadas':num_parcelas})
     except Exception as e: return jsonify({'success':False,'error':str(e)}),500
 
 @app.route('/api/filho/<int:iid>',methods=['DELETE'])
 def del_filho(iid):
-    # comprovante pode ser na col 7 (old) ou 14 (new)
     try:
         wb=openpyxl.load_workbook(EXCEL_FILE); ws=wb[SHEETS['filho']]
         hdrs=[ws.cell(1,c).value for c in range(1,ws.max_column+1)]
@@ -695,6 +742,10 @@ def edit_filho(iid):
                         if ci_dv: row[ci_dv-1].value=_due_date(str(row[1].value),int(b['dia_vencimento']))
                     if b.get('comprovante') and ci_com: row[ci_com-1].value=b['comprovante']
                     if ci_obs: row[ci_obs-1].value=b.get('observacao',row[ci_obs-1].value)
+                    ci_rec2 = _cidx('Recorrente')
+                    if ci_rec2:
+                        st_atual = b.get('status', str(row[ci_st-1].value if ci_st else 'Pendente'))
+                        row[ci_rec2-1].value = 'Não' if st_atual == 'Parcelado' else b.get('recorrente','Não')
                 else:
                     row[5].value=float(b.get('valor',row[5].value)); row[5].number_format='R$ #,##0.00'
                     if b.get('comprovante'): row[6].value=b['comprovante']
@@ -746,7 +797,6 @@ def get_pagamentos():
         items      = []
 
         def _safe_int_dia(raw, fallback=10):
-            """Converte dia de vencimento — aceita int, string numérica ou data completa."""
             if raw is None: return fallback
             try: return int(raw)
             except (ValueError, TypeError):
@@ -754,7 +804,6 @@ def get_pagamentos():
                 except: return fallback
 
         def _compute_dv(data_base, dia, pa_offset=0):
-            """Calcula Data Vencimento a partir da data base + offset de meses."""
             if not data_base: return ''
             try:
                 base = datetime.strptime(str(data_base)[:10], '%Y-%m-%d')
@@ -764,11 +813,9 @@ def get_pagamentos():
             except: return ''
 
         def _effective_dv(row_dict, data_keys, dia_key, pa_key):
-            """Retorna Data Vencimento: usa o campo salvo se válido, senão computa."""
             dv = str(row_dict.get('Data Vencimento') or '')[:10]
             if len(dv) == 10 and dv[:7]:
                 return dv
-            # Fallback: computa na hora
             data_base = None
             for k in data_keys:
                 v = row_dict.get(k)
@@ -777,8 +824,7 @@ def get_pagamentos():
             pa  = int(row_dict.get(pa_key) or 1)
             return _compute_dv(data_base, dia, pa - 1)
 
-        # ── COMPRAS DA CASA — todas as linhas ────────────────────────────────
-        # Agrupa por produto (Item + Data + ValorTotal) para calcular parcelas restantes
+        # ── COMPRAS DA CASA ──────────────────────────────────────────────────
         comp_groups = {}
         for c in compras:
             key = (
@@ -794,14 +840,11 @@ def get_pagamentos():
             pagas_grupo  = [r for r in grupo_sorted if str(r.get('Status Pagamento') or 'Pendente') == 'Pago']
 
             for c in grupo_sorted:
-                dv = _effective_dv(c,
-                    ['Data', 'Data Compra'],
-                    'Dia Vencimento', 'Parcela Atual')
+                dv = _effective_dv(c, ['Data', 'Data Compra'], 'Dia Vencimento', 'Parcela Atual')
                 if not dv or dv[:7] != mes_filtro:
                     continue
 
                 pa      = int(c.get('Parcela Atual') or 1)
-                # Se Status = Comprado/Pago, trata como pago independente do campo StPag
                 st_raw  = str(c.get('Status Pagamento') or 'Pendente')
                 st_comp = str(c.get('Status') or '')
                 st_pag  = 'Pago' if (st_raw == 'Pago' or st_comp in ('Comprado','Pago')) else st_raw
@@ -888,9 +931,58 @@ def get_pagamentos():
             })
 
         # ── GASTOS DO FILHO ──────────────────────────────────────────────────
-        # Agrupa por produto para calcular parcelas restantes
+        # Separa recorrentes dos demais
+        filho_rec  = [f for f in filho_data
+                      if str(f.get('Recorrente') or 'Não') == 'Sim'
+                      and int(f.get('Num Parcelas') or 1) <= 1]
+        filho_norm = [f for f in filho_data if f not in filho_rec]
+
+        # Filho recorrente — projeta como conta fixa
+        for f in filho_rec:
+            dia    = _safe_int_dia(f.get('Dia Vencimento'), 10)
+            val_t  = float(f.get('Valor Total (R$)') or f.get('Valor (R$)') or 0)
+            st_pag = str(f.get('Status Pagamento') or f.get('Status') or 'Pendente')
+            data_b = str(f.get('Data') or '')[:10]
+            mes_base = data_b[:7] if len(data_b) >= 7 else today.strftime('%Y-%m')
+
+            relevant = [mes_base]
+            try: cur = datetime.strptime(mes_base + '-01', '%Y-%m-%d')
+            except: cur = today
+            for _ in range(PROJECTION_MONTHS):
+                cur += relativedelta(months=1)
+                relevant.append(cur.strftime('%Y-%m'))
+                if cur.strftime('%Y-%m-%d') > horizon: break
+
+            if mes_filtro not in relevant: continue
+            yr2, mo2 = int(mes_filtro[:4]), int(mes_filtro[5:7])
+            ld2 = calendar.monthrange(yr2, mo2)[1]
+            dv2 = f"{mes_filtro}-{str(min(dia, ld2)).zfill(2)}"
+            st2 = st_pag if mes_filtro == mes_base else 'Pendente'
+
+            items.append({
+                'id':                  f.get('ID'),
+                'tipo':                'filho',
+                'descricao':           f.get('Descricao') or '—',
+                'categoria':           f.get('Categoria') or '—',
+                'responsavel':         f.get('Responsavel') or '—',
+                'valor':               val_t,
+                'valor_total':         val_t,
+                'data_vencimento':     dv2,
+                'num_parcelas':        None,
+                'parcela_atual':       None,
+                'parcelas_pagas':      None,
+                'parcelas_restantes':  None,
+                'restantes_apos_esta': None,
+                'status_pagamento':    st2,
+                'prioridade':          '—',
+                'loja':                '—',
+                'comprovante':         f.get('Comprovante') or '',
+                'recorrente':          'Sim',
+            })
+
+        # Filho não-recorrente / parcelado — agrupa por produto
         filho_groups = {}
-        for f in filho_data:
+        for f in filho_norm:
             key = (
                 str(f.get('Descricao') or ''),
                 str(f.get('Data') or '')[:10],
@@ -904,10 +996,7 @@ def get_pagamentos():
             pagas_f_grupo = [r for r in fgrupo_sorted if str(r.get('Status Pagamento') or 'Pendente') == 'Pago']
 
             for f in fgrupo_sorted:
-                dv = _effective_dv(f,
-                    ['Data'],
-                    'Dia Vencimento', 'Parcela Atual')
-                # Se Data Vencimento não existe, usa própria Data como vencimento do mês
+                dv = _effective_dv(f, ['Data'], 'Dia Vencimento', 'Parcela Atual')
                 if not dv:
                     dv = str(f.get('Data') or '')[:10]
                 if not dv or dv[:7] != mes_filtro:
@@ -990,7 +1079,6 @@ def dashboard():
             vf=float(f.get('Valor Parcela (R$)') or f.get('Valor Total (R$)') or f.get('Valor (R$)') or 0)
             cat_f[cat]=cat_f.get(cat,0)+vf
 
-        # ── Evolução mensal: transações + compras + contas + filho ──────────
         monthly={}
         def _madd(mes, key, val):
             monthly.setdefault(mes,{'receitas':0,'despesas':0,'compras':0,'contas':0,'filho':0})
@@ -1064,6 +1152,21 @@ def evolucao():
             monthly.setdefault(mes,{'receitas':0,'despesas':0,'compras':0,'contas':0,'filho':0})
             vf=float(f.get('Valor Parcela (R$)') or f.get('Valor Total (R$)') or f.get('Valor (R$)') or 0)
             monthly[mes]['filho']+=vf
+            # Projeção de filho recorrente
+            rec_f = str(f.get('Recorrente') or 'Não')
+            np_f  = int(f.get('Num Parcelas') or 1)
+            if rec_f == 'Sim' and np_f <= 1:
+                try: cur_f = datetime.strptime(mes + '-01', '%Y-%m-%d')
+                except: continue
+                horizon_ev = (datetime.today() + relativedelta(months=PROJECTION_MONTHS)).strftime('%Y-%m-%d')
+                for _ in range(PROJECTION_MONTHS):
+                    cur_f += relativedelta(months=1)
+                    fm = cur_f.strftime('%Y-%m')
+                    if cur_f.strftime('%Y-%m-%d') > horizon_ev: break
+                    if fim and fm > fim[:7]: break
+                    if inicio and fm < inicio[:7]: continue
+                    monthly.setdefault(fm,{'receitas':0,'despesas':0,'compras':0,'contas':0,'filho':0})
+                    monthly[fm]['filho'] += vf
         result=[]
         for mes in sorted(monthly.keys()):
             d=monthly[mes]; ts=d['despesas']+d['compras']+d['contas']+d['filho']
@@ -1147,7 +1250,6 @@ def _update_resumo():
             if not row[0]: continue
             mr=str(row[7] or ''); dt=f"{mr.split('/')[1]}-{mr.split('/')[0].zfill(2)}" if '/' in mr else datetime.now().strftime('%Y-%m')
             add(dt,'contas',float(row[3] or 0))
-        # Filho — usar Valor Parcela se disponível, senão Valor (R$) (col index 5)
         hdrs_f=[ws_f.cell(1,c).value for c in range(1,ws_f.max_column+1)]
         idx_fvp = hdrs_f.index('Valor Parcela (R$)') if 'Valor Parcela (R$)' in hdrs_f else (hdrs_f.index('Valor (R$)') if 'Valor (R$)' in hdrs_f else 5)
         idx_fdv = hdrs_f.index('Data Vencimento') if 'Data Vencimento' in hdrs_f else (hdrs_f.index('Data') if 'Data' in hdrs_f else 1)

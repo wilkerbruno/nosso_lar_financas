@@ -385,9 +385,16 @@
             <option value="Parcelado">💳 Parcelado</option>
           </select>
         </div>
-        <div class="form-group">
+         <div class="form-group">
           <label>📅 Dia do Vencimento</label>
           <input type="number" id="fDiaVencimento" min="1" max="31" value="10" placeholder="Ex: 10">
+        </div>
+        <div class="form-group" id="rowFilhoRecorrente">
+          <label>🔁 Gasto Recorrente?</label>
+          <select id="fRecorrente">
+            <option value="Não">Não (pagamento único)</option>
+            <option value="Sim">Sim (repete todo mês)</option>
+          </select>
         </div>
         <div class="form-group" id="rowFilhoParcelas" style="display:none">
           <label>💳 Nº de Parcelas</label>

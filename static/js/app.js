@@ -90,7 +90,7 @@ function viewComprovante(filename) {
   openModal('modalViewer');
 }
 function compBtn(filename) {
-  if(!filename) return '<span class="comp-none">—</span>';
+  if(!filename || typeof filename !== 'string' || !filename.includes('.')) return '<span class="comp-none">—</span>';
   return `<button class="comp-link" onclick="viewComprovante('${filename}')">📎 Ver</button>`;
 }
 
@@ -181,7 +181,6 @@ async function loadPagamentos() {
     const stClass    = isPago ? 'tag-pago' : isAtrasado ? 'tag-atrasado' : 'tag-pendente';
     const stLabel    = isPago ? '✅ Pago' : isAtrasado ? '❌ Atrasado' : '⏳ Pendente';
 
-    // ── Parcelas info ──────────────────────────────────────────────────────
     let parcelasCell = '—';
 
     const isParcelado = (item.tipo === 'parcela' || item.tipo === 'filho') && item.num_parcelas > 1;
@@ -217,7 +216,10 @@ async function loadPagamentos() {
     } else if(item.tipo === 'conta_fixa') {
       parcelasCell = '<span style="font-size:11px;color:var(--text-muted)">🔁 Recorrente</span>';
     } else if(item.tipo === 'filho') {
-      parcelasCell = '<span style="font-size:11px;color:var(--filho)">👶 Único</span>';
+      const isRecFilhoItem = item.recorrente === 'Sim';
+      parcelasCell = isRecFilhoItem
+        ? '<span style="font-size:11px;color:var(--filho)">🔁 Recorrente</span>'
+        : '<span style="font-size:11px;color:var(--filho)">👶 Único</span>';
     }
 
     const typeIcon = item.tipo === 'parcela' ? '💳' : item.tipo === 'filho' ? '👶' : '📄';
@@ -381,12 +383,10 @@ async function openEditCompra(id) {
   document.getElementById('cObservacao').value  = item['Observacao']||'';
   document.getElementById('cDiaVencimento').value = item['Dia Vencimento']||10;
 
-  // Status primeiro, depois toggleParceladoFields, depois num_parcelas
   const status = item['Status']||'Pendente';
   document.getElementById('cStatus').value = status;
-  toggleParceladoFields(); // abre/fecha campo de parcelas conforme status
+  toggleParceladoFields();
 
-  // Num parcelas: usa o valor real da linha (pode ser > 1 mesmo que o campo esteja "disabled" visualmente)
   const np = parseInt(item['Num Parcelas']||1);
   const npEl = document.getElementById('cNumParcelas');
   npEl.value = np;
@@ -446,7 +446,6 @@ async function loadContas() {
     const status=c['Status']||'Pendente'; const tr=document.createElement('tr');
     const isFixa = c['Recorrente'] !== 'Não';
 
-    // Calcula a data de vencimento completa a partir de Mes Referencia + Dia Vencimento
     let dvDisplay = `Dia ${c['Dia Vencimento']||'—'}`;
     let dvFull = null;
     const mr = c['Mes Referencia']||'';
@@ -534,11 +533,12 @@ async function loadFilho() {
       const stPag=f['Status Pagamento']||f['Status']||'Pendente';
       const stPagClass=stPag==='Pago'?'tag-pago':stPag==='Atrasado'?'tag-atrasado':'tag-pendente';
       const parcelaBadge = np>1 ? `<span class="tag-parcela">💳 ${pa}/${np}</span>` : '';
+      const isRecFilho = f['Recorrente'] === 'Sim';
       const dv=f['Data Vencimento']||'';
       const tr=document.createElement('tr');
       tr.innerHTML=`
         <td>${fmtDate(f['Data'])}</td>
-        <td style="color:var(--text-primary);font-weight:500">${f['Descricao']||'—'} ${parcelaBadge}</td>
+        <td style="color:var(--text-primary);font-weight:500">${f['Descricao']||'—'} ${parcelaBadge}${isRecFilho?'<span class="tag-recorrente" title="Gasto Recorrente">🔁</span>':''}</td>
         <td>${f['Categoria']||'—'}</td>
         <td>${f['Responsavel']||'—'}</td>
         <td style="color:var(--filho);font-weight:600">${fmt(val)}</td>
@@ -591,6 +591,7 @@ async function openEditFilho(id) {
   document.getElementById('fStatus').value=item['Status']||'Pendente';
   document.getElementById('fDiaVencimento').value=item['Dia Vencimento']||10;
   document.getElementById('fNumParcelas').value=item['Num Parcelas']||2;
+  document.getElementById('fRecorrente').value=item['Recorrente']||'Não';
   toggleFilhoParceladoFields();
   showExistingComp('fFilePreview',item['Comprovante']); openModal('modalFilho');
 }
@@ -600,9 +601,12 @@ function toggleFilhoParceladoFields() {
   const row     = document.getElementById('rowFilhoParcelas');
   const info    = document.getElementById('filhoParcelaInfo');
   const el      = document.getElementById('fNumParcelas');
+  const rowRec  = document.getElementById('rowFilhoRecorrente');
   const isParc  = status === 'Parcelado';
-  if(row)  row.style.display  = isParc ? '' : 'none';
-  if(info) info.style.display = isParc ? '' : 'none';
+  if(row)    row.style.display    = isParc ? '' : 'none';
+  if(info)   info.style.display   = isParc ? '' : 'none';
+  if(rowRec) rowRec.style.display = isParc ? 'none' : '';
+  if(isParc) { const r = document.getElementById('fRecorrente'); if(r) r.value = 'Não'; }
   if(el) {
     if(isParc){ el.removeAttribute('disabled'); el.setAttribute('min','2'); if(!el.value||parseInt(el.value)<2) el.value=2; }
     else { el.setAttribute('disabled','disabled'); el.removeAttribute('min'); el.value=1; }
@@ -615,6 +619,7 @@ async function submitFilho(e) {
   const status = document.getElementById('fStatus').value;
   const numParcelas = status==='Parcelado' ? parseInt(document.getElementById('fNumParcelas').value)||2 : 1;
   const diaVenc = parseInt(document.getElementById('fDiaVencimento').value)||10;
+  const recorrente = status === 'Parcelado' ? 'Não' : (document.getElementById('fRecorrente').value || 'Não');
   const payload={
     data:document.getElementById('fData').value,
     descricao:document.getElementById('fDescricao').value,
@@ -626,17 +631,19 @@ async function submitFilho(e) {
     status:status,
     num_parcelas:numParcelas,
     dia_vencimento:diaVenc,
+    recorrente:recorrente,
   };
   const isEdit=editState.filho!==null;
   const res=await fetch(isEdit?`${API}/filho/${editState.filho}`:`${API}/filho`,{method:isEdit?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   const data=await res.json();
   if(data.success){
-    const msg = isEdit ? 'Gasto atualizado! ✅' : (numParcelas>1?`${numParcelas}x parcelas criadas! 👶`:'Gasto do filho salvo! 👶');
+    const msg = isEdit ? 'Gasto atualizado! ✅' : (numParcelas>1?`${numParcelas}x parcelas criadas! 👶`:recorrente==='Sim'?'Gasto recorrente salvo! 🔁👶':'Gasto do filho salvo! 👶');
     showToast(msg,'success'); closeModal('modalFilho'); loadFilho(); loadDashboard();
   } else showToast('Erro: '+data.error,'error');
 }
 
 function showExistingComp(previewId, filename) {
+  filename = (filename && typeof filename === 'string' && filename.includes('.')) ? filename : '';
   const el=document.getElementById(previewId);
   if(filename){
     const ext=filename.split('.').pop().toLowerCase(); const isImg=['jpg','jpeg','png','webp','gif'].includes(ext); const url=`${API}/comprovantes/${filename}`;
