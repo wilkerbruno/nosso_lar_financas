@@ -267,7 +267,6 @@ def _migrate():
         changed |= _add_col(ws, 'Comprovante', 30, '')
         changed |= _add_col(ws, 'Recorrente', 12, 'Sim')
 
-    # ── Migração do Filho ──────────────────────────────────────────────────
     if SHEETS['filho'] not in wb.sheetnames:
         ws = wb.create_sheet(SHEETS['filho'])
         _setup_sheet(ws, FILHO_HEADERS, FILHO_WIDTHS, accent=FILHO_FONT)
@@ -304,7 +303,6 @@ def _migrate():
             if not any(c.value for c in row): continue
             changed = True
 
-            # ── Detecta linha corrompida: Comprovante contém valor numérico ──
             comp_raw = row[col_fcomp - 1].value if col_fcomp else None
             is_corrupt_f = False
             if comp_raw is not None:
@@ -341,7 +339,6 @@ def _migrate():
                 if col_fstpag: row[col_fstpag - 1].value = 'Pendente'
                 continue
 
-            # ── Back-fill normal para linhas íntegras ────────────────────────
             if col_fvr and col_fvt and row[col_fvt - 1].value is None:
                 row[col_fvt - 1].value = row[col_fvr - 1].value or 0
             if col_fvt and col_fvp and row[col_fvp - 1].value is None:
@@ -793,6 +790,7 @@ def get_pagamentos():
         contas     = load_sheet(SHEETS['contas'])
         filho_data = load_sheet(SHEETS['filho'])
         today      = datetime.today()
+        today_mes  = today.strftime('%Y-%m')   # ← usado para distinguir passado/presente de futuro
         horizon    = (today + relativedelta(months=PROJECTION_MONTHS)).strftime('%Y-%m-%d')
         items      = []
 
@@ -907,7 +905,10 @@ def get_pagamentos():
             yr, mo = int(mes_filtro[:4]), int(mes_filtro[5:7])
             ld = calendar.monthrange(yr, mo)[1]
             dv = f"{mes_filtro}-{str(min(dia, ld)).zfill(2)}"
-            st = status if mes_filtro == mes_base else 'Pendente'
+
+            # ── FIX: para meses passados/presentes usa o status real do registro;
+            #         só força Pendente em meses futuros (ainda não chegaram).
+            st = status if mes_filtro <= today_mes else 'Pendente'
 
             items.append({
                 'id':                  cval('ID'),
@@ -931,7 +932,6 @@ def get_pagamentos():
             })
 
         # ── GASTOS DO FILHO ──────────────────────────────────────────────────
-        # Separa recorrentes dos demais
         filho_rec  = [f for f in filho_data
                       if str(f.get('Recorrente') or 'Não') == 'Sim'
                       and int(f.get('Num Parcelas') or 1) <= 1]
@@ -957,7 +957,10 @@ def get_pagamentos():
             yr2, mo2 = int(mes_filtro[:4]), int(mes_filtro[5:7])
             ld2 = calendar.monthrange(yr2, mo2)[1]
             dv2 = f"{mes_filtro}-{str(min(dia, ld2)).zfill(2)}"
-            st2 = st_pag if mes_filtro == mes_base else 'Pendente'
+
+            # ── FIX: para meses passados/presentes usa o status real do registro;
+            #         só força Pendente em meses futuros (ainda não chegaram).
+            st2 = st_pag if mes_filtro <= today_mes else 'Pendente'
 
             items.append({
                 'id':                  f.get('ID'),
@@ -1152,7 +1155,6 @@ def evolucao():
             monthly.setdefault(mes,{'receitas':0,'despesas':0,'compras':0,'contas':0,'filho':0})
             vf=float(f.get('Valor Parcela (R$)') or f.get('Valor Total (R$)') or f.get('Valor (R$)') or 0)
             monthly[mes]['filho']+=vf
-            # Projeção de filho recorrente
             rec_f = str(f.get('Recorrente') or 'Não')
             np_f  = int(f.get('Num Parcelas') or 1)
             if rec_f == 'Sim' and np_f <= 1:
